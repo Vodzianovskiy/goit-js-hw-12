@@ -3,12 +3,12 @@ import 'izitoast/dist/css/iziToast.min.css';
 
 import { getImagesByQuery } from './js/pixabay-api';
 import {
-	createGallery,
-	clearGallery,
-	showLoader,
-	hideLoader,
-	showLoadMoreButton,
-	hideLoadMoreButton,
+  createGallery,
+  clearGallery,
+  showLoader,
+  hideLoader,
+  showLoadMoreButton,
+  hideLoadMoreButton,
 } from './js/render-functions';
 
 const formEl = document.querySelector('.form');
@@ -18,6 +18,7 @@ const loadMoreBtn = document.querySelector('.load-more');
 let query = '';
 let page = 1;
 let totalHits = 0;
+
 const PER_PAGE = 15;
 
 hideLoadMoreButton();
@@ -26,75 +27,87 @@ formEl.addEventListener('submit', onSubmit);
 loadMoreBtn.addEventListener('click', onLoadMore);
 
 async function onSubmit(evt) {
-	evt.preventDefault();
+  evt.preventDefault();
 
-	query = inputEl.value.trim();
-	page = 1;
-	totalHits = 0;
+  query = inputEl.value.trim();
+  page = 1;
+  totalHits = 0;
 
-	clearGallery();
-	hideLoadMoreButton();
+  clearGallery();
+  hideLoadMoreButton();
 
-	if (!query) {
-		iziToast.info({ message: 'Please enter a search query.' });
-		return;
-	}
+  if (!query) {
+    iziToast.info({ message: 'Please enter a search query.' });
+    return;
+  }
 
-	try {
-		showLoader();
-		const data = await getImagesByQuery(query, page);
-		totalHits = data.totalHits;
+  try {
+    showLoader();
 
-		if (!data.hits.length) {
-			iziToast.error({
-				message:
-					'Sorry, there are no images matching your search query. Please try again!',
-			});
-			return;
-		}
+    const data = await getImagesByQuery(query, page);
+    totalHits = data.totalHits;
 
-		createGallery(data.hits);
+    if (!data.hits.length) {
+      iziToast.error({
+        message:
+          'Sorry, there are no images matching your search query. Please try again!',
+      });
+      return;
+    }
 
-		const totalPages = Math.ceil(totalHits / PER_PAGE);
-		if (page < totalPages) showLoadMoreButton();
+    createGallery(data.hits);
 
-		iziToast.success({ message: `Hooray! We found ${totalHits} images.` });
-	} catch (err) {
-		iziToast.error({ message: 'Request failed. Try again later.' });
-	} finally {
-		hideLoader();
-		formEl.reset();
-	}
+    const totalPages = Math.ceil(totalHits / PER_PAGE);
+
+    if (totalPages <= 1) {
+      hideLoadMoreButton();
+      iziToast.info({
+        message: "We're sorry, but you've reached the end of search results.",
+      });
+    } else {
+      showLoadMoreButton();
+    }
+
+    iziToast.success({ message: `Hooray! We found ${totalHits} images.` });
+  } catch (err) {
+    iziToast.error({ message: 'Request failed. Try again later.' });
+  } finally {
+    hideLoader();
+  }
 }
 
 async function onLoadMore() {
-	page += 1;
+  page += 1;
 
-	try {
-		showLoader();
-		const data = await getImagesByQuery(query, page);
-		createGallery(data.hits);
+  hideLoadMoreButton();
+  showLoader();
 
-		smoothScroll();
+  try {
+    const data = await getImagesByQuery(query, page);
+    createGallery(data.hits);
 
-		const totalPages = Math.ceil(totalHits / PER_PAGE);
-		if (page >= totalPages) {
-			hideLoadMoreButton();
-			iziToast.info({
-				message: "We're sorry, but you've reached the end of search results.",
-			});
-		}
-	} catch (err) {
-		iziToast.error({ message: 'Request failed. Try again later.' });
-	} finally {
-		hideLoader();
-	}
+    smoothScroll();
+
+    const totalPages = Math.ceil(totalHits / PER_PAGE);
+
+    if (page >= totalPages) {
+      iziToast.info({
+        message: "We're sorry, but you've reached the end of search results.",
+      });
+    } else {
+      showLoadMoreButton();
+    }
+  } catch (err) {
+    iziToast.error({ message: 'Request failed. Try again later.' });
+  } finally {
+    hideLoader();
+  }
 }
 
 function smoothScroll() {
-	const card = document.querySelector('.gallery a');
-	if (!card) return;
+  const card = document.querySelector('.gallery a');
+  if (!card) return;
 
-	const { height } = card.getBoundingClientRect();
-	window.scrollBy({ top: height * 2, behavior: 'smooth' });
+  const { height } = card.getBoundingClientRect();
+  window.scrollBy({ top: height * 2, behavior: 'smooth' });
 }
